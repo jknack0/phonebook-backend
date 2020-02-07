@@ -1,38 +1,15 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
+const Person = require('./models/person')
 
 app.use(bodyParser.json())
 app.use(morgan('tiny'))
 app.use(cors())
 app.use(express.static('build'))
-
-let persons = [
-  {
-    "name": "Ada Lovelace",
-    "number": "39-44-5323523",
-    "id": 2
-  },
-  {
-    "name": "Dan Abramov",
-    "number": "12-43-234345",
-    "id": 3
-  },
-  {
-    "name": "My friend jonathon lopez",
-    "number": "123",
-    "id": 7
-  }
-]
-
-const generateId = () => {
-  const maxId = persons.length > 0
-    ? Math.max(...persons.map(person => person.id))
-    : 0
-  return maxId + 1
-}
 
 app.get('/info', (request, response) => {
   response.send(`<div>The phonebook has ${persons.length} people in it.</div>
@@ -42,13 +19,19 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  response.json(persons)
+  Person
+    .find({})
+    .then(persons => {
+      response.json(persons.map(person => person.toJSON()))
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-  const personToGetId = Number(request.params.id)
-  const person = persons.find(person => person.id === personToGetId)
-  response.json(person)
+  Person
+    .findById(request.params.id)
+    .then(person => {
+      response.json(person.toJSON())
+    })
 })
 
 app.post('/api/persons', (request, response) => {
@@ -60,22 +43,16 @@ app.post('/api/persons', (request, response) => {
     })
   }
 
-  if(!persons.map(person => person.name.toLowerCase().includes(body.name.toLowerCase()))) {
-    return response.status(400).json({
-      error: 'this name is already in the phonebook'
-    })
-  }
-
-  const personToAdd = {
+  const personToAdd = new Person({
     name: body.name,
     number: body.number,
-    id: generateId()
-  }
+  })
 
-  persons = persons.concat(personToAdd)
-
-  response.json(personToAdd)
-  
+  personToAdd
+    .save()
+    .then(newPerson => {
+      response.json(newPerson.toJSON())
+    })
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -84,7 +61,7 @@ app.delete('/api/persons/:id', (request, response) => {
   response.status(204).end()
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`App listening on ${PORT}`)
 })
