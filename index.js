@@ -1,10 +1,11 @@
-require('dotenv').config()
 const express = require('express')
 const app = express()
+require('dotenv').config()
 const bodyParser = require('body-parser')
 const morgan = require('morgan')
 const cors = require('cors')
 const Person = require('./models/person')
+const errorHandler = require('./middleware/errorHandler')
 
 app.use(bodyParser.json())
 app.use(morgan('tiny'))
@@ -19,22 +20,25 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-  Person
-    .find({})
+  Person.find({})
     .then(persons => {
       response.json(persons.map(person => person.toJSON()))
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
-  Person
-    .findById(request.params.id)
+app.get('/api/persons/:id', (request, response, next) => {
+  Person.findById(request.params.id)
     .then(person => {
-      response.json(person.toJSON())
+      if(person) {
+        response.json(person.toJSON())
+      } else {
+        response.status(404).end()
+      }
     })
+    .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
   const body = request.body
 
   if(!body.name || !body.number) {
@@ -48,18 +52,37 @@ app.post('/api/persons', (request, response) => {
     number: body.number,
   })
 
-  personToAdd
-    .save()
+  personToAdd.save()
     .then(newPerson => {
       response.json(newPerson.toJSON())
     })
+    .catch(error => next(error))
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-  const personToDeleteId = Number(request.params.id)
-  persons = persons.filter(person => person.id !== personToDeleteId)
-  response.status(204).end()
+app.put('/api/persons/:id', (request, response, next) => {
+  const body = request.body
+  
+  const personToUpdate = {
+    name: body.name,
+    number: body.number,
+  }
+
+  Person.findByIdAndUpdate(request.params.id, personToUpdate, {new: true})
+    .then(updatedPerson => {
+      response.json(updatedPerson.toJSON())
+    })
+    .catch(error => next(error))
 })
+
+app.delete('/api/persons/:id', (request, response, next) => {
+  Person.findByIdAndRemove(request.params.id)
+    .then(deletedPerson => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
