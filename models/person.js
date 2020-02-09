@@ -3,11 +3,12 @@ const uniqueValidator = require('mongoose-unique-validator')
 
 mongoose.set('useFindAndModify', false)
 
+// eslint-disable-next-line no-undef
 const databaseUrl = process.env.MONGODB_URI
 
 mongoose
   .connect(databaseUrl, {useNewUrlParser: true, useUnifiedTopology: true})
-  .then(result => {
+  .then(() => {
     console.log('Connected')
   })
   .catch(error => {

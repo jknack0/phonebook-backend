@@ -1,4 +1,5 @@
 const express = require('express')
+
 const app = express()
 require('dotenv').config()
 const bodyParser = require('body-parser')
@@ -13,7 +14,7 @@ app.use(cors())
 app.use(express.static('build'))
 
 app.get('/info', (request, response) => {
-  response.send(`<div>The phonebook has ${persons.length} people in it.</div>
+  response.send(`<div>The phonebook has a lot of people in it.</div>
                  <br />
                  <div>${new Date()}</div>`)
   
@@ -76,7 +77,7 @@ app.put('/api/persons/:id', (request, response, next) => {
 
 app.delete('/api/persons/:id', (request, response, next) => {
   Person.findByIdAndRemove(request.params.id)
-    .then(deletedPerson => {
+    .then(() => {
       response.status(204).end()
     })
     .catch(error => next(error))
@@ -84,6 +85,7 @@ app.delete('/api/persons/:id', (request, response, next) => {
 
 app.use(errorHandler)
 
+// eslint-disable-next-line no-undef
 const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`App listening on ${PORT}`)
